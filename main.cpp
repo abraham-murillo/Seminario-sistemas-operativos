@@ -63,7 +63,7 @@ struct Operation {
       return a * b;
     if (op == '/')
       return a / b;
-    if (op == '+')
+    if (op == '%')
       return a % b;
 
     println("Operación inválida", op);
