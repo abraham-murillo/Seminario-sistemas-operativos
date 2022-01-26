@@ -16,6 +16,11 @@ void println(Args&&... args) {
   cout << '\n';
 }
 
+void waitOnScreen(chrono::duration<long double> duration) {
+  sleep_for(duration);
+  system("clear");
+}
+
 struct FakeClock {
   int secondsAgo = 0;
 
@@ -77,38 +82,53 @@ struct Process {
   Operation operation;
   int maxExpectedTime = 0;
   int id = 0;
+  int batchId = 0;
 };
 
-struct Batch : public deque<Process> {
-  int id = 0;
-};
+using Batch = deque<Process>;
 
 struct BatchHandler : public deque<Batch> {
-  vector<Process> finished;
+  Batch finished;
   FakeClock globalClock;
-  int lastId = 0;
 
-  void add(Process process) {
-    if (!empty() && back().size() < MAX_PROCESSES)
+  void add(Process& process) {
+    if (!empty() && back().size() < MAX_PROCESSES) {
       back().push_back(process);
-    else {
-      push_back(Batch{{process}});
-      back().id = lastId++;
-    }
-  }
-
-  void finishFirstProcess(Batch& batch) {
-    if (size()) {
-      finished.emplace_back(batch.front());
-      batch.pop_front();
-    }
-  }
-
-  void printFinishedProcesses() {
-    if (finished.empty()) {
-      println(" No hay procesos terminados");
     } else {
-      println("Procesos Terminados: [");
+      push_back(Batch{{process}});
+    }
+
+    back().back().batchId = size();
+  }
+
+  void print(Batch&& current, optional<Process> execution, Batch& finished, FakeClock& tmp) {
+    println("Segundos transcurridos:", globalClock.currentTime());
+    println("Número de lotes pendientes:", size());
+    println();
+
+    println("Lote en ejecución: ");
+    for (auto& process : current) {
+      println(" Número de programa:", process.id, ", Tiempo máximo estimado:", process.maxExpectedTime);
+    }
+    println();
+
+    println("Proceso en ejecución:");
+    if (execution.has_value()) {
+      println(" Nombre del programador:", execution.value().programmerName);
+      println(" Operación:", execution.value().operation.toString());
+      println(" Tiempo máximo estimado:", execution.value().maxExpectedTime);
+      println(" Número del programa:", execution.value().id);
+      println(" Tiempo transcurrido en ejecución:", tmp.currentTime());
+      println(" Tiempo restante por ejecutar:", execution.value().maxExpectedTime - tmp.currentTime());
+    } else {
+      println(" Cargando...");
+    }
+    println();
+
+    println("Procesos terminados:");
+    if (finished.empty()) {
+      println(" No hay procesos terminados.");
+    } else {
       for (auto& process : finished) {
         println(" Número de programa:",
                 process.id,
@@ -116,66 +136,45 @@ struct BatchHandler : public deque<Batch> {
                 process.programmerName,
                 ", Operación:",
                 process.operation.toString(),
-                ", Tiempo Máximo Estimado:",
+                ", Tiempo máximo estimado:",
                 process.maxExpectedTime,
                 ", Resultado:",
                 process.operation.getResult(),
                 ", Lote:",
-                int(1 + cnt / 5));
+                process.batchId);
       }
-      println("]\n");
     }
   }
-  
-  void print() {
 
-    if (size()) {
-      auto nextBatch = front();
+  void solve() {
+    globalClock.reset();
 
-      while (!nextBatch.empty()) {
-        Process execution = nextBatch.front();
+    FakeClock tmp;
+    while (!empty()) {
+      Batch current = front();
+      pop_front();
 
-        FakeClock tmp;
+      while (!current.empty()) {
+        Process execution = current.front();
+
+        tmp.reset();
+        print(/* Batch */ move(current), /* execution */ nullopt, /* finished */ finished, /* clock */ tmp);
+        waitOnScreen(0.3s);
+
+        current.pop_front();
         while (tmp.currentTime() < execution.maxExpectedTime) {
-          println("Segundos transcurridos:", globalClock.currentTime());
-          println("Número de lotes pendientes:", size() - 1);
-          println();
-
-          println("Lote en Ejecución: [");
-          for (auto& process : nextBatch) {
-            println(" Número de programa:", process.id, ", Tiempo máximo estimado:", process.maxExpectedTime);
-          }
-          println("]\n");
-
-          println("Proceso en ejecución:");
-          println("- Nombre del programador:", execution.programmerName);
-          println("- Operación:", execution.operation.toString());
-          println("- Tiempo Máximo Estimado:", execution.maxExpectedTime);
-          println("- Número del programa:", execution.id);
-          println("- Tiempo transcurrido en ejecución:", tmp.currentTime());
-          println("- Tiempo restante por ejecutar:", execution.maxExpectedTime - tmp.currentTime());
-          println();
-
-          printFinishedProcesses();
-
-          // Wait for 1s
-          sleep_for(1s);
-          system("clear");
-
+          print(/* Batch */ move(current), /* execution */ execution, /* finished */ finished, /* clock */ tmp);
+          waitOnScreen(1s);
           globalClock.secondsAgo++;
           tmp.secondsAgo++;
         }
 
-        finishFirstProcess(nextBatch);
+        finished.emplace_back(execution);
       }
-
-      pop_front();
-    } else {
-      println("Segundos transcurridos:", globalClock.currentTime());
-      println("No hay lotes pendientes");
-      println();
-      printFinishedProcesses();
     }
+
+    tmp.reset();
+    print(/* Batch */ {}, /* execution */ nullopt, /* finished */ finished, /* clock */ tmp);
   }
 };
 
@@ -207,11 +206,7 @@ int main() {
 
   system("clear");
 
-  handler.globalClock.reset();
-  while (!handler.empty()) {
-    handler.print();
-  }
-  handler.print();
+  handler.solve();
 
   return 0;
 }
