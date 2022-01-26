@@ -119,29 +119,14 @@ struct BatchHandler : public deque<Batch> {
                 ", Tiempo Máximo Estimado:",
                 process.maxExpectedTime,
                 ", Resultado:",
-                process.operation.getResult());
+                process.operation.getResult(),
+                ", Lote:",
+                int(1 + cnt / 5));
       }
       println("]\n");
     }
   }
-
-  // void printAll() {
-  //   println("All:");
-  //   for (const auto& batch : *this)
-  //     for (const auto& process : batch) {
-  //       println("Número de programa:",
-  //               process.id,
-  //               ", Nombre del programador:",
-  //               process.programmerName,
-  //               ", Operación:",
-  //               process.operation.toString(),
-  //               ", Tiempo Máximo Estimado:",
-  //               process.maxExpectedTime,
-  //               ", Resultado:",
-  //               process.operation.getResult());
-  //     }
-  // }
-
+  
   void print() {
 
     if (size()) {
