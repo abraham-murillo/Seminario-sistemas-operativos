@@ -1,5 +1,6 @@
 #include "VariadicTable.h"
 #include <bits/stdc++.h>
+#include <conio.h>
 using namespace std::this_thread; // sleep_for, sleep_until
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 using namespace std;
@@ -178,15 +179,38 @@ struct BatchHandler : public deque<Batch> {
         print(move(runningBatch), /* inExecution */ nullopt, finished);
         waitOnScreen(0.3s);
 
+        bool paused = false;
         runningBatch.pop_front();
         while (inExecution.clock.currentTime() < inExecution.maxExpectedTime) {
+
+          if (kbhit()) {
+            char ch = getch();
+
+            if (ch == 'i') {
+              runningBatch.push_back(inExecution);
+              break;
+            } else if (ch == 'e') {
+              inExecution.error();
+              break;
+            } else if (ch == 'p') {
+              paused = true;
+            } else if (ch == 'c') {
+              paused = false;
+            }
+          }
+
           print(move(runningBatch), inExecution, finished);
           waitOnScreen(1s);
-          globalClock.secondsAgo++;
-          inExecution.clock.secondsAgo++;
+
+          if (!paused) {
+            globalClock.secondsAgo++;
+            inExecution.clock.secondsAgo++;
+          }
         }
 
-        finished.emplace_back(inExecution);
+        if (inExecution.hasError || inExecution.clock.currentTime() >= inExecution.maxExpectedTime) {
+          finished.emplace_back(inExecution);
+        }
       }
     }
 
