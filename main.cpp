@@ -298,7 +298,7 @@ struct Handler {
       if (inExecution.hasValue() && (inExecution.hasError() || inExecution.hasFinished())) {
         // Ya terminó o tuvo un error
         inExecution.finishedTime = time(0);
-        inExecution.processingTime_s = localtime(&inExecution.finishedTime)->tm_sec - localtime(&inExecution.arrivalTime)->tm_sec;
+        inExecution.processingTime_s = inExecution.finishedTime - inExecution.arrivalTime;
         finished.push_back(inExecution);
         inExecution.reset();
       }
@@ -312,7 +312,7 @@ struct Handler {
           inExecution = ready.front();
           ready.pop_front();
           time_t now = time(0);
-          inExecution.responseTime_s = localtime(&now)->tm_sec - localtime(&inExecution.arrivalTime)->tm_sec;
+          inExecution.responseTime_s = now - inExecution.arrivalTime;
         }
       }
 
