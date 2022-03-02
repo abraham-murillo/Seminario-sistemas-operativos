@@ -114,6 +114,7 @@ struct Process {
   time_t arrivalTime;
   time_t finishedTime;
   int processingTime_s;
+  int responseTime_s;
 
   void setError() {
     error = true;
@@ -247,8 +248,15 @@ struct Handler {
       if (finished.empty()) {
         println(" - ");
       } else {
-        VariadicTable<int, string, string, int, int, string, string, int> finishedTable(
-            {"Id", "Operación", "Resultado", "Tiempo máximo estimado", "Reloj", "Tiempo de llegada", "Tiempo de finalización", "Tiempo de retorno"});
+        VariadicTable<int, string, string, int, int, string, string, int, int> finishedTable({"Id",
+                                                                                              "Operación",
+                                                                                              "Resultado",
+                                                                                              "Tiempo máximo estimado",
+                                                                                              "Reloj",
+                                                                                              "Tiempo de llegada",
+                                                                                              "Tiempo de finalización",
+                                                                                              "Tiempo de retorno",
+                                                                                              "Tiempo de respuesta"});
         for (auto& process : finished) {
           finishedTable.addRow(process.id,
                                process.operation.toString(),
@@ -257,7 +265,8 @@ struct Handler {
                                process.clock.currentTime(),
                                getTimeWithFormat(process.arrivalTime),
                                getTimeWithFormat(process.finishedTime),
-                               process.processingTime_s);
+                               process.processingTime_s,
+                               process.responseTime_s);
         }
         finishedTable.print();
       }
@@ -302,6 +311,8 @@ struct Handler {
         if (ready.size()) {
           inExecution = ready.front();
           ready.pop_front();
+          time_t now = time(0);
+          inExecution.responseTime_s = localtime(&now)->tm_sec - localtime(&inExecution.arrivalTime)->tm_sec;
         }
       }
 
