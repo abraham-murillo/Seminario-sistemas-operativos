@@ -289,7 +289,7 @@ struct Handler {
       if (inExecution.hasValue() && (inExecution.hasError() || inExecution.hasFinished())) {
         // Ya terminó o tuvo un error
         inExecution.finishedTime = time(0);
-        inExecution.processingTime_s = localtime(&inExecution.finishedTime)->tm_sec;
+        inExecution.processingTime_s = localtime(&inExecution.finishedTime)->tm_sec - localtime(&inExecution.arrivalTime)->tm_sec;
         finished.push_back(inExecution);
         inExecution.reset();
       }
