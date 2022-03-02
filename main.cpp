@@ -113,8 +113,12 @@ struct Process {
   bool error = false;
   time_t arrivalTime;
   time_t finishedTime;
+  time_t readyTime;
+  time_t processingTime;
   int processingTime_s;
   int responseTime_s;
+  int waitTime_s;
+  int serviceTime_s;
 
   void setError() {
     error = true;
@@ -172,6 +176,7 @@ struct Handler {
       if (blocked.front().hasBeenUnblocked()) {
         // Ya está desbloqueado
         ready.push_back(blocked.front());
+        ready.back().readyTime = time(0);
         blocked.pop_front();
       } else {
         // Ninguno se ha desbloqueado
@@ -182,6 +187,7 @@ struct Handler {
     // Agarrar más procesos si tengo menos de kMaxProcessesInMemory en memory
     while (numOfProcessesInMemory() < kMaxProcessesInMemory && all.size()) {
       ready.push_back(all.front());
+      ready.back().readyTime = time(0);
       all.pop_front();
     }
   }
@@ -248,15 +254,17 @@ struct Handler {
       if (finished.empty()) {
         println(" - ");
       } else {
-        VariadicTable<int, string, string, int, int, string, string, int, int> finishedTable({"Id",
-                                                                                              "Operación",
-                                                                                              "Resultado",
-                                                                                              "Tiempo máximo estimado",
-                                                                                              "Reloj",
-                                                                                              "Tiempo de llegada",
-                                                                                              "Tiempo de finalización",
-                                                                                              "Tiempo de retorno",
-                                                                                              "Tiempo de respuesta"});
+        VariadicTable<int, string, string, int, int, string, string, int, int, int, int> finishedTable({"Id",
+                                                                                                        "Operación",
+                                                                                                        "Resultado",
+                                                                                                        "Tiempo máximo estimado",
+                                                                                                        "Reloj",
+                                                                                                        "Tiempo de llegada",
+                                                                                                        "Tiempo de finalización",
+                                                                                                        "Tiempo de retorno",
+                                                                                                        "Tiempo de respuesta",
+                                                                                                        "Tiempo de espera",
+                                                                                                        "Tiempo de servicio"});
         for (auto& process : finished) {
           finishedTable.addRow(process.id,
                                process.operation.toString(),
@@ -266,7 +274,9 @@ struct Handler {
                                getTimeWithFormat(process.arrivalTime),
                                getTimeWithFormat(process.finishedTime),
                                process.processingTime_s,
-                               process.responseTime_s);
+                               process.responseTime_s,
+                               process.waitTime_s,
+                               process.serviceTime_s);
         }
         finishedTable.print();
       }
@@ -299,6 +309,7 @@ struct Handler {
         // Ya terminó o tuvo un error
         inExecution.finishedTime = time(0);
         inExecution.processingTime_s = inExecution.finishedTime - inExecution.arrivalTime;
+        inExecution.serviceTime_s = inExecution.finishedTime - inExecution.processingTime;
         finished.push_back(inExecution);
         inExecution.reset();
       }
@@ -312,7 +323,9 @@ struct Handler {
           inExecution = ready.front();
           ready.pop_front();
           time_t now = time(0);
-          inExecution.responseTime_s = now - inExecution.arrivalTime;
+          inExecution.responseTime_s = now - inExecution.readyTime;
+          inExecution.waitTime_s = now - inExecution.arrivalTime;
+          inExecution.processingTime = now;
         }
       }
 
