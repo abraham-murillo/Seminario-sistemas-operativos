@@ -113,6 +113,7 @@ struct Process {
   bool error = false;
   time_t arrivalTime;
   time_t finishedTime;
+  int processingTime_s;
 
   void setError() {
     error = true;
@@ -246,8 +247,8 @@ struct Handler {
       if (finished.empty()) {
         println(" - ");
       } else {
-        VariadicTable<int, string, string, int, int, string, string> finishedTable(
-            {"Id", "Operación", "Resultado", "Tiempo máximo estimado", "Reloj", "Tiempo de llegada", "Tiempo de finalización"});
+        VariadicTable<int, string, string, int, int, string, string, int> finishedTable(
+            {"Id", "Operación", "Resultado", "Tiempo máximo estimado", "Reloj", "Tiempo de llegada", "Tiempo de finalización", "Tiempo de retorno"});
         for (auto& process : finished) {
           finishedTable.addRow(process.id,
                                process.operation.toString(),
@@ -255,7 +256,8 @@ struct Handler {
                                process.maxExpectedTime,
                                process.clock.currentTime(),
                                getTimeWithFormat(process.arrivalTime),
-                               getTimeWithFormat(process.finishedTime));
+                               getTimeWithFormat(process.finishedTime),
+                               process.processingTime_s);
         }
         finishedTable.print();
       }
@@ -287,6 +289,7 @@ struct Handler {
       if (inExecution.hasValue() && (inExecution.hasError() || inExecution.hasFinished())) {
         // Ya terminó o tuvo un error
         inExecution.finishedTime = time(0);
+        inExecution.processingTime_s = localtime(&inExecution.finishedTime)->tm_sec;
         finished.push_back(inExecution);
         inExecution.reset();
       }
