@@ -1,11 +1,8 @@
 #include "VariadicTable.h"
 #include <bits/stdc++.h>
-#include <conio.h>
 using namespace std::this_thread; // sleep_for, sleep_until
 using namespace std::chrono_literals; // ns, us, ms, s, h, etc.
 using namespace std;
-
-const int MAX_PROCESSES = 5;
 
 struct Random {
   mt19937 rng;
@@ -22,6 +19,23 @@ struct Random {
     return s[0];
   }
 };
+
+#ifdef LOCAL
+bool kbhit() {
+  static Random random;
+  return random.get<int>(0, 5) % 2;
+}
+
+char getch() {
+  static Random random;
+  return random.get("ie?");
+}
+#else
+#include <conio.h>
+#endif
+
+const int kMaxProcessesInMemory = 5;
+const int kMaxBlockedTime = 8;
 
 template <class... Args>
 void print(Args&&... args) {
@@ -86,67 +100,136 @@ struct Operation {
 };
 
 struct Process {
+  int id = -1;
   Operation operation;
   int maxExpectedTime = 0;
-  int id = 0;
-  int batchId = -1;
   FakeClock clock;
-  bool hasError = false;
+  FakeClock blockedClock;
+  bool error = false;
 
-  void error() {
-    hasError = true;
+  void setError() {
+    error = true;
   }
 
   string result() {
-    return hasError ? "Error" : to_string(operation.result());
+    return hasError() ? "Error" : to_string(operation.result());
   }
 
   int remainingTime() {
     return max(0, maxExpectedTime - clock.currentTime());
   }
-};
 
-using Batch = deque<Process>;
-
-struct BatchHandler : public deque<Batch> {
-  Batch finished;
-  FakeClock globalClock;
-
-  void add(Process& process) {
-    if (!empty() && back().size() < MAX_PROCESSES) {
-      back().push_back(process);
-    } else {
-      push_back(Batch{{process}});
-    }
-    // Set the curretn batchId for the process
-    back().back().batchId = size();
+  bool hasError() {
+    return error;
   }
 
-  void print(Batch&& runningBatch, optional<Process> inExecution, Batch& finished) {
+  bool hasFinished() {
+    return clock.currentTime() >= maxExpectedTime;
+  }
+
+  bool hasBeenUnblocked() {
+    return blockedClock.currentTime() >= kMaxBlockedTime;
+  }
+
+  void reset() {
+    id = -1;
+  }
+
+  bool hasValue() {
+    return id != -1;
+  }
+};
+
+using Processes = deque<Process>;
+
+struct Handler {
+  Processes all, ready, blocked, finished;
+  FakeClock globalClock;
+  Process inExecution;
+  bool paused = false;
+
+  void add(Process& process) {
+    all.push_back(process);
+  }
+
+  int numOfProcessesInMemory() {
+    return ready.size() + blocked.size() + inExecution.hasValue();
+  }
+
+  void loadProcessesInMemory() {
+    // Cargar kMaxProcessesInMemory en memoria
+    // Ve si algún proceso bloqueado ya puede entrar a los ready otra vez
+    while (blocked.size()) {
+      if (blocked.front().hasBeenUnblocked()) {
+        // Ya está desbloqueado
+        ready.push_back(blocked.front());
+        blocked.pop_front();
+      } else {
+        // Ninguno se ha desbloqueado
+        break;
+      }
+    }
+
+    // Agarrar más procesos si tengo menos de kMaxProcessesInMemory en memory
+    while (numOfProcessesInMemory() < kMaxProcessesInMemory && all.size()) {
+      ready.push_back(all.front());
+      all.pop_front();
+    }
+  }
+
+  void updateTime() {
+    if (!paused) {
+      globalClock.secondsAgo++;
+      if (inExecution.hasValue())
+        inExecution.clock.secondsAgo++;
+      for (auto& process : blocked)
+        process.blockedClock.secondsAgo++;
+    }
+  }
+
+  void print() {
     println("Segundos transcurridos:", globalClock.currentTime());
-    println("Lotes pendientes:", this->size());
+    println("No. nuevos:", all.size());
     println();
 
     {
-      VariadicTable<int, int, string, int> runningBatchTable({"Id", "Tiempo máximo estimado", "Operación", "Tiempo en ejecución"});
-      println("Lote en ejecución:");
-      for (auto& process : runningBatch) {
-        runningBatchTable.addRow(process.id, process.maxExpectedTime, process.operation.toString(), process.clock.currentTime());
+      println("Cola de listos:");
+      if (ready.empty()) {
+        println(" - ");
+      } else {
+        VariadicTable<int, int, string, int> readyTable({"Id", "Tiempo máximo estimado", "Operación", "Tiempo en ejecución"});
+        for (auto& process : ready) {
+          readyTable.addRow(process.id, process.maxExpectedTime, process.operation.toString(), process.clock.currentTime());
+        }
+        readyTable.print();
       }
-      runningBatchTable.print();
       println();
     }
 
     {
       println("Proceso en ejecución:");
-      if (inExecution.has_value()) {
-        println(" Id:", inExecution.value().id);
-        println(" Tiempo máximo estimado:", inExecution.value().maxExpectedTime);
-        println(" Operación:", inExecution.value().operation.toString());
-        println(" Tiempo en ejecución:", inExecution.value().clock.currentTime());
-        println(" Tiempo restante por ejecutar:", inExecution.value().remainingTime());
+      if (inExecution.hasValue()) {
+        println(" Id:", inExecution.id);
+        println(" Tiempo máximo estimado:", inExecution.maxExpectedTime);
+        println(" Operación:", inExecution.operation.toString());
+        println(" Tiempo en ejecución:", inExecution.clock.currentTime());
+        println(" Tiempo restante por ejecutar:", inExecution.remainingTime());
       } else {
-        println(" Cargando...");
+        println(" - ");
+      }
+      println();
+    }
+
+    {
+      println("Cola de bloqueados:");
+      if (blocked.empty()) {
+        println(" - ");
+      } else {
+        VariadicTable<int, int> blockedTable({"Id", "Tiempo transcurrido bloqueado"});
+        for (auto& process : blocked) {
+          blockedTable.addRow(process.id, process.blockedClock.currentTime());
+        }
+        blockedTable.print();
       }
       println();
     }
@@ -154,13 +237,13 @@ struct BatchHandler : public deque<Batch> {
     {
       println("Procesos terminados:");
       if (finished.empty()) {
-        println(" No hay procesos terminados.");
+        println(" - ");
       } else {
-        VariadicTable<int, string, string, int> finishedProcessesTable({"Id", "Operación", "Resultado", "Lote"});
+        VariadicTable<int, string, string, int, int> finishedTable({"Id", "Operación", "Resultado", "Tiempo máximo estimado", "Reloj"});
         for (auto& process : finished) {
-          finishedProcessesTable.addRow(process.id, process.operation.toString(), process.result(), process.batchId);
+          finishedTable.addRow(process.id, process.operation.toString(), process.result(), process.maxExpectedTime, process.clock.currentTime());
         }
-        finishedProcessesTable.print();
+        finishedTable.print();
       }
     }
   }
@@ -168,53 +251,48 @@ struct BatchHandler : public deque<Batch> {
   void solve() {
     globalClock.reset();
 
-    while (!empty()) {
-      Batch runningBatch = front();
-      pop_front();
+    while (all.size() || numOfProcessesInMemory()) {
+      if (kbhit()) {
+        char ch = getch();
 
-      while (!runningBatch.empty()) {
-        Process inExecution = runningBatch.front();
-        // Si tiene error algún proceso, mandar llamar process.error()
-
-        print(move(runningBatch), /* inExecution */ nullopt, finished);
-        waitOnScreen(0.3s);
-
-        bool paused = false;
-        runningBatch.pop_front();
-        while (inExecution.clock.currentTime() < inExecution.maxExpectedTime) {
-
-          if (kbhit()) {
-            char ch = getch();
-
-            if (ch == 'i') {
-              runningBatch.push_back(inExecution);
-              break;
-            } else if (ch == 'e') {
-              inExecution.error();
-              break;
-            } else if (ch == 'p') {
-              paused = true;
-            } else if (ch == 'c') {
-              paused = false;
-            }
+        if (ch == 'i') {
+          if (inExecution.hasValue()) {
+            inExecution.blockedClock.reset();
+            blocked.push_back(inExecution);
+            inExecution.reset();
           }
-
-          print(move(runningBatch), inExecution, finished);
-          waitOnScreen(1s);
-
-          if (!paused) {
-            globalClock.secondsAgo++;
-            inExecution.clock.secondsAgo++;
-          }
-        }
-
-        if (inExecution.hasError || inExecution.clock.currentTime() >= inExecution.maxExpectedTime) {
-          finished.emplace_back(inExecution);
+        } else if (ch == 'e') {
+          inExecution.setError();
+        } else if (ch == 'p') {
+          paused = true;
+        } else if (ch == 'c') {
+          paused = false;
         }
       }
+
+      if (inExecution.hasValue() && (inExecution.hasError() || inExecution.hasFinished())) {
+        // Ya terminó o tuvo un error
+        finished.push_back(inExecution);
+        inExecution.reset();
+      }
+
+      // Cargar processos en memoria
+      loadProcessesInMemory();
+
+      // Seleccionar uno de esos procesos para que esté en ejecución
+      if (!inExecution.hasValue()) {
+        if (ready.size()) {
+          inExecution = ready.front();
+          ready.pop_front();
+        }
+      }
+
+      print();
+      waitOnScreen(1s);
+      updateTime();
     }
 
-    print(/* runningBatch */ {}, /* inExecution */ nullopt, finished);
+    print();
   }
 };
 
@@ -223,7 +301,7 @@ int main() {
   cout << "Número de procesos: ";
   cin >> numProcesses;
 
-  BatchHandler handler;
+  Handler handler;
   Random random;
   for (int id = 0; id < numProcesses; id++) {
     Process process;
