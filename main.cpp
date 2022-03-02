@@ -53,6 +53,11 @@ void waitOnScreen(chrono::duration<long double> duration) {
   system("clear");
 }
 
+string getTimeWithFormat(const time_t& time) {
+  auto timeObject = localtime(&time);
+  return to_string(timeObject->tm_hour) + ":" + to_string(timeObject->tm_min) + ":" + to_string(timeObject->tm_sec);
+}
+
 struct FakeClock {
   int secondsAgo = 0;
 
@@ -106,6 +111,8 @@ struct Process {
   FakeClock clock;
   FakeClock blockedClock;
   bool error = false;
+  time_t arrivalTime;
+  time_t finishedTime;
 
   void setError() {
     error = true;
@@ -239,9 +246,16 @@ struct Handler {
       if (finished.empty()) {
         println(" - ");
       } else {
-        VariadicTable<int, string, string, int, int> finishedTable({"Id", "Operación", "Resultado", "Tiempo máximo estimado", "Reloj"});
+        VariadicTable<int, string, string, int, int, string, string> finishedTable(
+            {"Id", "Operación", "Resultado", "Tiempo máximo estimado", "Reloj", "Tiempo de llegada", "Tiempo de finalización"});
         for (auto& process : finished) {
-          finishedTable.addRow(process.id, process.operation.toString(), process.result(), process.maxExpectedTime, process.clock.currentTime());
+          finishedTable.addRow(process.id,
+                               process.operation.toString(),
+                               process.result(),
+                               process.maxExpectedTime,
+                               process.clock.currentTime(),
+                               getTimeWithFormat(process.arrivalTime),
+                               getTimeWithFormat(process.finishedTime));
         }
         finishedTable.print();
       }
@@ -272,6 +286,7 @@ struct Handler {
 
       if (inExecution.hasValue() && (inExecution.hasError() || inExecution.hasFinished())) {
         // Ya terminó o tuvo un error
+        inExecution.finishedTime = time(0);
         finished.push_back(inExecution);
         inExecution.reset();
       }
@@ -310,6 +325,7 @@ int main() {
     process.operation.a = random.get<int>(1, 100);
     process.operation.b = random.get<int>(1, 100);
     process.operation.op = random.get("+-*/%");
+    process.arrivalTime = time(0); // current time
     handler.add(process);
   }
 
