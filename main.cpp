@@ -48,9 +48,10 @@ void println(Args&&... args) {
   cout << '\n';
 }
 
-void waitOnScreen(chrono::duration<long double> duration) {
+void waitOnScreen(chrono::duration<long double> duration, bool clearScreen = false) {
   sleep_for(duration);
-  system("clear");
+  if (clearScreen)
+    system("clear");
 }
 
 struct FakeClock {
@@ -106,12 +107,11 @@ struct Process {
   FakeClock clock;
   FakeClock blockedClock;
   bool error = false;
-  int arrivalTime;
   int finishedTime;
-  int readyTime;
-  int processingTime;
-  int processingTime_s;
-  int responseTime_s;
+  optional<int> arrivalTime;
+  optional<int> firstTimeInExecution;
+  int returnTime;
+  optional<int> responseTime_s;
   int waitTime_s;
   int serviceTime_s;
 
@@ -171,7 +171,8 @@ struct Handler {
       if (blocked.front().hasBeenUnblocked()) {
         // Ya está desbloqueado
         ready.push_back(blocked.front());
-        ready.back().readyTime = globalClock.currentTime();
+        if (!ready.back().arrivalTime.has_value())
+          ready.back().arrivalTime = globalClock.currentTime();
         blocked.pop_front();
       } else {
         // Ninguno se ha desbloqueado
@@ -182,7 +183,8 @@ struct Handler {
     // Agarrar más procesos si tengo menos de kMaxProcessesInMemory en memory
     while (numOfProcessesInMemory() < kMaxProcessesInMemory && all.size()) {
       ready.push_back(all.front());
-      ready.back().readyTime = globalClock.currentTime();
+      if (!ready.back().arrivalTime.has_value())
+        ready.back().arrivalTime = globalClock.currentTime();
       all.pop_front();
     }
   }
@@ -249,29 +251,14 @@ struct Handler {
       if (finished.empty()) {
         println(" - ");
       } else {
-        VariadicTable<int, string, string, int, int, int, int, int, int, int, int> finishedTable({"Id",
-                                                                                                  "Operación",
-                                                                                                  "Resultado",
-                                                                                                  "Tiempo máximo estimado",
-                                                                                                  "Reloj",
-                                                                                                  "Tiempo de llegada",
-                                                                                                  "Tiempo de finalización",
-                                                                                                  "Tiempo de retorno",
-                                                                                                  "Tiempo de respuesta",
-                                                                                                  "Tiempo de espera",
-                                                                                                  "Tiempo de servicio"});
+        VariadicTable<int, string, string, int> finishedTable({
+            "Id",
+            "Operación",
+            "Resultado",
+            "Tiempo máximo estimado",
+        });
         for (auto& process : finished) {
-          finishedTable.addRow(process.id,
-                               process.operation.toString(),
-                               process.result(),
-                               process.maxExpectedTime,
-                               process.clock.currentTime(),
-                               process.arrivalTime,
-                               process.finishedTime,
-                               process.processingTime_s,
-                               process.responseTime_s,
-                               process.waitTime_s,
-                               process.serviceTime_s);
+          finishedTable.addRow(process.id, process.operation.toString(), process.result(), process.maxExpectedTime);
         }
         finishedTable.print();
       }
@@ -303,8 +290,9 @@ struct Handler {
       if (inExecution.hasValue() && (inExecution.hasError() || inExecution.hasFinished())) {
         // Ya terminó o tuvo un error
         inExecution.finishedTime = globalClock.currentTime();
-        inExecution.processingTime_s = inExecution.finishedTime - inExecution.arrivalTime;
-        inExecution.serviceTime_s = inExecution.finishedTime - inExecution.processingTime;
+        inExecution.returnTime = inExecution.finishedTime - inExecution.arrivalTime.value();
+        inExecution.serviceTime_s = inExecution.finishedTime - inExecution.firstTimeInExecution.value();
+        inExecution.waitTime_s = inExecution.firstTimeInExecution.value();
         finished.push_back(inExecution);
         inExecution.reset();
       }
@@ -318,18 +306,30 @@ struct Handler {
           inExecution = ready.front();
           ready.pop_front();
           int now = globalClock.currentTime();
-          inExecution.responseTime_s = now - inExecution.readyTime;
-          inExecution.waitTime_s = now - inExecution.arrivalTime;
-          inExecution.processingTime = now;
+          if (!inExecution.responseTime_s.has_value())
+            inExecution.responseTime_s = now - inExecution.arrivalTime.value();
+          if (!inExecution.firstTimeInExecution.has_value())
+            inExecution.firstTimeInExecution = now;
         }
       }
 
       print();
-      waitOnScreen(1s);
+      waitOnScreen(1s, numOfProcessesInMemory() != 0 /* clearScreen */);
       updateTime();
     }
 
-    print();
+    VariadicTable<int, int, int, int, int, int, int> finishedTable(
+        {"Id", "Tiempo de llegada", "Tiempo de finalización", "Tiempo de retorno", "Tiempo de respuesta", "Tiempo de espera", "Tiempo de servicio"});
+    for (auto& process : finished) {
+      finishedTable.addRow(process.id,
+                           process.arrivalTime.value(),
+                           process.finishedTime,
+                           process.returnTime,
+                           process.responseTime_s.value(),
+                           process.waitTime_s,
+                           process.serviceTime_s);
+    }
+    finishedTable.print();
   }
 };
 
@@ -347,7 +347,6 @@ int main() {
     process.operation.a = random.get<int>(1, 100);
     process.operation.b = random.get<int>(1, 100);
     process.operation.op = random.get("+-*/%");
-    process.arrivalTime = handler.globalClock.currentTime(); // current time
     handler.add(process);
   }
 
