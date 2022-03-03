@@ -53,11 +53,6 @@ void waitOnScreen(chrono::duration<long double> duration) {
   system("clear");
 }
 
-string getTimeWithFormat(const time_t& time) {
-  auto timeObject = localtime(&time);
-  return to_string(timeObject->tm_hour) + ":" + to_string(timeObject->tm_min) + ":" + to_string(timeObject->tm_sec);
-}
-
 struct FakeClock {
   int secondsAgo = 0;
 
@@ -111,10 +106,10 @@ struct Process {
   FakeClock clock;
   FakeClock blockedClock;
   bool error = false;
-  time_t arrivalTime;
-  time_t finishedTime;
-  time_t readyTime;
-  time_t processingTime;
+  int arrivalTime;
+  int finishedTime;
+  int readyTime;
+  int processingTime;
   int processingTime_s;
   int responseTime_s;
   int waitTime_s;
@@ -176,7 +171,7 @@ struct Handler {
       if (blocked.front().hasBeenUnblocked()) {
         // Ya está desbloqueado
         ready.push_back(blocked.front());
-        ready.back().readyTime = time(0);
+        ready.back().readyTime = globalClock.currentTime();
         blocked.pop_front();
       } else {
         // Ninguno se ha desbloqueado
@@ -187,7 +182,7 @@ struct Handler {
     // Agarrar más procesos si tengo menos de kMaxProcessesInMemory en memory
     while (numOfProcessesInMemory() < kMaxProcessesInMemory && all.size()) {
       ready.push_back(all.front());
-      ready.back().readyTime = time(0);
+      ready.back().readyTime = globalClock.currentTime();
       all.pop_front();
     }
   }
@@ -254,25 +249,25 @@ struct Handler {
       if (finished.empty()) {
         println(" - ");
       } else {
-        VariadicTable<int, string, string, int, int, string, string, int, int, int, int> finishedTable({"Id",
-                                                                                                        "Operación",
-                                                                                                        "Resultado",
-                                                                                                        "Tiempo máximo estimado",
-                                                                                                        "Reloj",
-                                                                                                        "Tiempo de llegada",
-                                                                                                        "Tiempo de finalización",
-                                                                                                        "Tiempo de retorno",
-                                                                                                        "Tiempo de respuesta",
-                                                                                                        "Tiempo de espera",
-                                                                                                        "Tiempo de servicio"});
+        VariadicTable<int, string, string, int, int, int, int, int, int, int, int> finishedTable({"Id",
+                                                                                                  "Operación",
+                                                                                                  "Resultado",
+                                                                                                  "Tiempo máximo estimado",
+                                                                                                  "Reloj",
+                                                                                                  "Tiempo de llegada",
+                                                                                                  "Tiempo de finalización",
+                                                                                                  "Tiempo de retorno",
+                                                                                                  "Tiempo de respuesta",
+                                                                                                  "Tiempo de espera",
+                                                                                                  "Tiempo de servicio"});
         for (auto& process : finished) {
           finishedTable.addRow(process.id,
                                process.operation.toString(),
                                process.result(),
                                process.maxExpectedTime,
                                process.clock.currentTime(),
-                               getTimeWithFormat(process.arrivalTime),
-                               getTimeWithFormat(process.finishedTime),
+                               process.arrivalTime,
+                               process.finishedTime,
                                process.processingTime_s,
                                process.responseTime_s,
                                process.waitTime_s,
@@ -307,7 +302,7 @@ struct Handler {
 
       if (inExecution.hasValue() && (inExecution.hasError() || inExecution.hasFinished())) {
         // Ya terminó o tuvo un error
-        inExecution.finishedTime = time(0);
+        inExecution.finishedTime = globalClock.currentTime();
         inExecution.processingTime_s = inExecution.finishedTime - inExecution.arrivalTime;
         inExecution.serviceTime_s = inExecution.finishedTime - inExecution.processingTime;
         finished.push_back(inExecution);
@@ -322,7 +317,7 @@ struct Handler {
         if (ready.size()) {
           inExecution = ready.front();
           ready.pop_front();
-          time_t now = time(0);
+          int now = globalClock.currentTime();
           inExecution.responseTime_s = now - inExecution.readyTime;
           inExecution.waitTime_s = now - inExecution.arrivalTime;
           inExecution.processingTime = now;
@@ -352,7 +347,7 @@ int main() {
     process.operation.a = random.get<int>(1, 100);
     process.operation.b = random.get<int>(1, 100);
     process.operation.op = random.get("+-*/%");
-    process.arrivalTime = time(0); // current time
+    process.arrivalTime = handler.globalClock.currentTime(); // current time
     handler.add(process);
   }
 
