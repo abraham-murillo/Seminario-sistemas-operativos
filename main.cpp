@@ -23,12 +23,14 @@ struct Random {
 #ifdef LOCAL
 bool kbhit() {
   static Random random;
-  return random.get<int>(0, 5) % 2;
+  return true;
 }
 
 char getch() {
   static Random random;
-  return random.get("ie?");
+  char ch = random.get("ientc");
+  // cout << "Presionado " << ch << '\n';
+  return ch;
 }
 #else
 #include <conio.h>
@@ -100,6 +102,12 @@ struct Operation {
   }
 };
 
+const string newProcess = "Nuevo";
+const string completedProcess = "Terminado normalmente";
+const string processWithError = "Terminado con error";
+const string blockedProcess = "Bloqueado";
+const string inQueue = "En cola";
+
 struct Process {
   int id = -1;
   Operation operation;
@@ -111,11 +119,13 @@ struct Process {
   optional<int> arrivalTime;
   optional<int> firstTimeInExecution;
   int returnTime;
-  optional<int> responseTime_s;
-  int waitTime_s;
-  int serviceTime_s;
+  optional<int> responseTime;
+  int waitTime;
+  int serviceTime;
+  string status = newProcess;
 
   void setError() {
+    status = processWithError;
     error = true;
   }
 
@@ -139,14 +149,60 @@ struct Process {
     return blockedClock.currentTime() >= kMaxBlockedTime;
   }
 
-  void reset() {
+  void clear() {
     id = -1;
   }
 
   bool hasValue() {
     return id != -1;
   }
+
+  string getStatus() {
+    return status;
+  }
+
+  string getArrivalTime() {
+    return arrivalTime.has_value() ? to_string(arrivalTime.value()) : "-";
+  }
+
+  string getFinishedTime() {
+    return hasFinished() || hasError() ? to_string(finishedTime) : "-";
+  }
+
+  string getReturnTime() {
+    return hasFinished() || hasError() ? to_string(returnTime) : "-";
+  }
+
+  string getWaitTime() {
+    return hasFinished() || hasError() ? to_string(waitTime) : "-";
+  }
+
+  string getServiceTime() {
+    return hasFinished() || hasError() ? to_string(serviceTime) : "-";
+  }
+
+  string getRemainingTime() {
+    if (status == blockedProcess || status == inQueue)
+      return to_string(remainingTime());
+    return "-";
+  }
+
+  string getResponseTime() {
+    return responseTime.has_value() ? to_string(responseTime.value()) : "-";
+  }
 };
+
+Process randomProcess() {
+  static int id = 0;
+  static Random random;
+  Process process;
+  process.id = id++;
+  process.maxExpectedTime = random.get<int>(6, 16);
+  process.operation.a = random.get<int>(1, 100);
+  process.operation.b = random.get<int>(1, 100);
+  process.operation.op = random.get("+-*/%");
+  return process;
+}
 
 using Processes = deque<Process>;
 
@@ -154,9 +210,10 @@ struct Handler {
   Processes all, ready, blocked, finished;
   FakeClock globalClock;
   Process inExecution;
-  bool paused = false;
+  bool pause = false;
+  bool showProcessesTable = false;
 
-  void add(Process& process) {
+  void add(Process process) {
     all.push_back(process);
   }
 
@@ -170,6 +227,7 @@ struct Handler {
     while (blocked.size()) {
       if (blocked.front().hasBeenUnblocked()) {
         // Ya está desbloqueado
+        blocked.front().status = inQueue;
         ready.push_back(blocked.front());
         if (!ready.back().arrivalTime.has_value())
           ready.back().arrivalTime = globalClock.currentTime();
@@ -190,7 +248,7 @@ struct Handler {
   }
 
   void updateTime() {
-    if (!paused) {
+    if (!pause) {
       globalClock.secondsAgo++;
       if (inExecution.hasValue())
         inExecution.clock.secondsAgo++;
@@ -200,67 +258,93 @@ struct Handler {
   }
 
   void print() {
-    println("Segundos transcurridos:", globalClock.currentTime());
-    println("No. nuevos:", all.size());
-    println();
-
-    {
-      println("Cola de listos:");
-      if (ready.empty()) {
-        println(" - ");
-      } else {
-        VariadicTable<int, int, string, int> readyTable({"Id", "Tiempo máximo estimado", "Operación", "Tiempo en ejecución"});
-        for (auto& process : ready) {
-          readyTable.addRow(process.id, process.maxExpectedTime, process.operation.toString(), process.clock.currentTime());
+    if (showProcessesTable) {
+      VariadicTable<int, string, string, string, string, string, string, string, string> processesTable({"Id",
+                                                                                                         "Estado del proceso",
+                                                                                                         "Tiempo de llegada",
+                                                                                                         "Tiempo de finalización",
+                                                                                                         "Tiempo de retorno",
+                                                                                                         "Tiempo de espera",
+                                                                                                         "Tiempo de servicio",
+                                                                                                         "Tiempo restante en CPU",
+                                                                                                         "Tiempo de respuesta"});
+      for (auto queue : {all, ready, blocked, finished})
+        for (auto& process : queue) {
+          processesTable.addRow(process.id,
+                                process.getStatus(),
+                                process.getArrivalTime(),
+                                process.getFinishedTime(),
+                                process.getReturnTime(),
+                                process.getWaitTime(),
+                                process.getServiceTime(),
+                                process.getRemainingTime(),
+                                process.getResponseTime());
         }
-        readyTable.print();
-      }
-      println();
-    }
+      processesTable.print();
 
-    {
-      println("Proceso en ejecución:");
-      if (inExecution.hasValue()) {
-        println(" Id:", inExecution.id);
-        println(" Tiempo máximo estimado:", inExecution.maxExpectedTime);
-        println(" Operación:", inExecution.operation.toString());
-        println(" Tiempo en ejecución:", inExecution.clock.currentTime());
-        println(" Tiempo restante por ejecutar:", inExecution.remainingTime());
-      } else {
-        println(" - ");
-      }
+    } else {
+      println("Segundos transcurridos:", globalClock.currentTime());
+      println("No. nuevos:", all.size());
       println();
-    }
 
-    {
-      println("Cola de bloqueados:");
-      if (blocked.empty()) {
-        println(" - ");
-      } else {
-        VariadicTable<int, int> blockedTable({"Id", "Tiempo transcurrido bloqueado"});
-        for (auto& process : blocked) {
-          blockedTable.addRow(process.id, process.blockedClock.currentTime());
+      {
+        println("Cola de listos:");
+        if (ready.empty()) {
+          println(" - ");
+        } else {
+          VariadicTable<int, int, string, int> readyTable({"Id", "Tiempo máximo estimado", "Operación", "Tiempo en ejecución"});
+          for (auto& process : ready) {
+            readyTable.addRow(process.id, process.maxExpectedTime, process.operation.toString(), process.clock.currentTime());
+          }
+          readyTable.print();
         }
-        blockedTable.print();
+        println();
       }
-      println();
-    }
 
-    {
-      println("Procesos terminados:");
-      if (finished.empty()) {
-        println(" - ");
-      } else {
-        VariadicTable<int, string, string, int> finishedTable({
-            "Id",
-            "Operación",
-            "Resultado",
-            "Tiempo máximo estimado",
-        });
-        for (auto& process : finished) {
-          finishedTable.addRow(process.id, process.operation.toString(), process.result(), process.maxExpectedTime);
+      {
+        println("Proceso en ejecución:");
+        if (inExecution.hasValue()) {
+          println(" Id:", inExecution.id);
+          println(" Tiempo máximo estimado:", inExecution.maxExpectedTime);
+          println(" Operación:", inExecution.operation.toString());
+          println(" Tiempo en ejecución:", inExecution.clock.currentTime());
+          println(" Tiempo restante por ejecutar:", inExecution.remainingTime());
+        } else {
+          println(" - ");
         }
-        finishedTable.print();
+        println();
+      }
+
+      {
+        println("Cola de bloqueados:");
+        if (blocked.empty()) {
+          println(" - ");
+        } else {
+          VariadicTable<int, int> blockedTable({"Id", "Tiempo transcurrido bloqueado"});
+          for (auto& process : blocked) {
+            blockedTable.addRow(process.id, process.blockedClock.currentTime());
+          }
+          blockedTable.print();
+        }
+        println();
+      }
+
+      {
+        println("Procesos terminados:");
+        if (finished.empty()) {
+          println(" - ");
+        } else {
+          VariadicTable<int, string, string, int> finishedTable({
+              "Id",
+              "Operación",
+              "Resultado",
+              "Tiempo máximo estimado",
+          });
+          for (auto& process : finished) {
+            finishedTable.addRow(process.id, process.operation.toString(), process.result(), process.maxExpectedTime);
+          }
+          finishedTable.print();
+        }
       }
     }
   }
@@ -275,26 +359,37 @@ struct Handler {
         if (ch == 'i') {
           if (inExecution.hasValue()) {
             inExecution.blockedClock.reset();
+            inExecution.status = blockedProcess;
             blocked.push_back(inExecution);
-            inExecution.reset();
+            inExecution.clear();
           }
         } else if (ch == 'e') {
           inExecution.setError();
         } else if (ch == 'p') {
-          paused = true;
+          pause = true;
         } else if (ch == 'c') {
-          paused = false;
+          pause = false;
+          showProcessesTable = false;
+        } else if (ch == 'n') {
+          add(randomProcess());
+        } else if (ch == 't') {
+          showProcessesTable = true;
+          pause = true;
         }
       }
 
       if (inExecution.hasValue() && (inExecution.hasError() || inExecution.hasFinished())) {
         // Ya terminó o tuvo un error
+        if (!inExecution.hasError() && inExecution.hasFinished()) {
+          inExecution.status = completedProcess;
+        }
+
         inExecution.finishedTime = globalClock.currentTime();
         inExecution.returnTime = inExecution.finishedTime - inExecution.arrivalTime.value();
-        inExecution.serviceTime_s = inExecution.finishedTime - inExecution.firstTimeInExecution.value();
-        inExecution.waitTime_s = inExecution.firstTimeInExecution.value();
+        inExecution.serviceTime = inExecution.finishedTime - inExecution.firstTimeInExecution.value();
+        inExecution.waitTime = inExecution.firstTimeInExecution.value();
         finished.push_back(inExecution);
-        inExecution.reset();
+        inExecution.clear();
       }
 
       // Cargar processos en memoria
@@ -306,8 +401,8 @@ struct Handler {
           inExecution = ready.front();
           ready.pop_front();
           int now = globalClock.currentTime();
-          if (!inExecution.responseTime_s.has_value())
-            inExecution.responseTime_s = now - inExecution.arrivalTime.value();
+          if (!inExecution.responseTime.has_value())
+            inExecution.responseTime = now - inExecution.arrivalTime.value();
           if (!inExecution.firstTimeInExecution.has_value())
             inExecution.firstTimeInExecution = now;
         }
@@ -325,9 +420,9 @@ struct Handler {
                            process.arrivalTime.value(),
                            process.finishedTime,
                            process.returnTime,
-                           process.responseTime_s.value(),
-                           process.waitTime_s,
-                           process.serviceTime_s);
+                           process.responseTime.value(),
+                           process.waitTime,
+                           process.serviceTime);
     }
     finishedTable.print();
   }
@@ -339,14 +434,8 @@ int main() {
   cin >> numProcesses;
 
   Handler handler;
-  Random random;
   for (int id = 0; id < numProcesses; id++) {
-    Process process;
-    process.id = id;
-    process.maxExpectedTime = random.get<int>(6, 16);
-    process.operation.a = random.get<int>(1, 100);
-    process.operation.b = random.get<int>(1, 100);
-    process.operation.op = random.get("+-*/%");
+    auto process = randomProcess();
     handler.add(process);
   }
 
