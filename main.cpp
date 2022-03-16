@@ -29,7 +29,7 @@ bool kbhit() {
 char getch() {
   static Random random;
   char ch = random.get("ientc");
-  // cout << "Presionado " << ch << '\n';
+  cout << "Presionado " << ch << '\n';
   return ch;
 }
 #else
@@ -161,6 +161,17 @@ struct Process {
     return status;
   }
 
+  string getResult() {
+    string res = operation.toString();
+    if (status == completedProcess || status == processWithError) {
+      res += " = ";
+      res += result();
+    } else {
+      res += " = ?";
+    }
+    return res;
+  }
+
   string getArrivalTime() {
     return arrivalTime.has_value() ? to_string(arrivalTime.value()) : "-";
   }
@@ -259,19 +270,21 @@ struct Handler {
 
   void print() {
     if (showProcessesTable) {
-      VariadicTable<int, string, string, string, string, string, string, string, string> processesTable({"Id",
-                                                                                                         "Estado del proceso",
-                                                                                                         "Tiempo de llegada",
-                                                                                                         "Tiempo de finalización",
-                                                                                                         "Tiempo de retorno",
-                                                                                                         "Tiempo de espera",
-                                                                                                         "Tiempo de servicio",
-                                                                                                         "Tiempo restante en CPU",
-                                                                                                         "Tiempo de respuesta"});
+      VariadicTable<int, string, string, string, string, string, string, string, string, string> processesTable({"Id",
+                                                                                                                 "Estado del proceso",
+                                                                                                                 "Operación y datos",
+                                                                                                                 "Tiempo de llegada",
+                                                                                                                 "Tiempo de finalización",
+                                                                                                                 "Tiempo de retorno",
+                                                                                                                 "Tiempo de espera",
+                                                                                                                 "Tiempo de servicio",
+                                                                                                                 "Tiempo restante en CPU",
+                                                                                                                 "Tiempo de respuesta"});
       for (auto queue : {all, ready, blocked, finished})
         for (auto& process : queue) {
           processesTable.addRow(process.id,
                                 process.getStatus(),
+                                process.getResult(),
                                 process.getArrivalTime(),
                                 process.getFinishedTime(),
                                 process.getReturnTime(),
@@ -280,6 +293,19 @@ struct Handler {
                                 process.getRemainingTime(),
                                 process.getResponseTime());
         }
+
+      if (inExecution.hasValue()) {
+        processesTable.addRow(inExecution.id,
+                              "En ejecución",
+                              inExecution.getResult(),
+                              inExecution.getArrivalTime(),
+                              inExecution.getFinishedTime(),
+                              inExecution.getReturnTime(),
+                              inExecution.getWaitTime(),
+                              inExecution.getServiceTime(),
+                              inExecution.getRemainingTime(),
+                              inExecution.getResponseTime());
+      }
       processesTable.print();
 
     } else {
