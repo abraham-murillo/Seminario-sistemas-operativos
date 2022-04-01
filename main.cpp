@@ -123,6 +123,7 @@ struct Process {
   int waitTime;
   int serviceTime;
   string status = newProcess;
+  int quantum = 0;
 
   void setError() {
     status = processWithError;
@@ -223,6 +224,11 @@ struct Handler {
   Process inExecution;
   bool pause = false;
   bool showProcessesTable = false;
+  int quantum = 0;
+
+  void setQuantum(int quantum) {
+    this->quantum = quantum;
+  }
 
   void add(Process process) {
     all.push_back(process);
@@ -261,8 +267,10 @@ struct Handler {
   void updateTime() {
     if (!pause) {
       globalClock.secondsAgo++;
-      if (inExecution.hasValue())
+      if (inExecution.hasValue()) {
         inExecution.clock.secondsAgo++;
+        inExecution.quantum++;
+      }
       for (auto& process : blocked)
         process.blockedClock.secondsAgo++;
     }
@@ -311,6 +319,7 @@ struct Handler {
     } else {
       println("Segundos transcurridos:", globalClock.currentTime());
       println("No. nuevos:", all.size());
+      println("Quantum:", quantum);
       println();
 
       {
@@ -335,6 +344,7 @@ struct Handler {
           println(" Operación:", inExecution.operation.toString());
           println(" Tiempo en ejecución:", inExecution.clock.currentTime());
           println(" Tiempo restante por ejecutar:", inExecution.remainingTime());
+          println(" Quantum restante:", quantum - inExecution.quantum);
         } else {
           println(" - ");
         }
@@ -375,19 +385,27 @@ struct Handler {
     }
   }
 
+  void interruptProcess() {
+    inExecution.blockedClock.reset();
+    inExecution.status = blockedProcess;
+    blocked.push_back(inExecution);
+    inExecution.clear();
+  }
+
   void solve() {
     globalClock.reset();
 
     while (all.size() || numOfProcessesInMemory()) {
+      if (inExecution.quantum >= quantum) {
+        interruptProcess();
+      }
+
       if (kbhit()) {
         char ch = getch();
 
         if (ch == 'i') {
           if (inExecution.hasValue()) {
-            inExecution.blockedClock.reset();
-            inExecution.status = blockedProcess;
-            blocked.push_back(inExecution);
-            inExecution.clear();
+            interruptProcess();
           }
         } else if (ch == 'e') {
           inExecution.setError();
@@ -425,6 +443,7 @@ struct Handler {
       if (!inExecution.hasValue()) {
         if (ready.size()) {
           inExecution = ready.front();
+          inExecution.quantum = 0;
           ready.pop_front();
           int now = globalClock.currentTime();
           if (!inExecution.responseTime.has_value())
@@ -456,8 +475,11 @@ struct Handler {
 
 int main() {
   int numProcesses;
+  int quantum;
   cout << "Número de procesos: ";
   cin >> numProcesses;
+  cout << "Quantum (segundos): ";
+  cin >> quantum;
 
   Handler handler;
   for (int id = 0; id < numProcesses; id++) {
@@ -467,6 +489,7 @@ int main() {
 
   system("clear");
 
+  handler.setQuantum(quantum);
   handler.solve();
 
   return 0;

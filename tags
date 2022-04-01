@@ -1,0 +1,204 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	//
+AUTO	VariadicTable.h	/^enum class VariadicTableColumnFormat { AUTO, SCIENTIFIC, FIXED, PERCENT };$/;"	e	enum:VariadicTableColumnFormat
+BLACK	conio.h/conio.h	/^#define BLACK /;"	d
+BLINK	conio.h/conio.h	/^#define BLINK /;"	d
+BLUE	conio.h/conio.h	/^#define BLUE /;"	d
+BROWN	conio.h/conio.h	/^#define BROWN /;"	d
+CYAN	conio.h/conio.h	/^#define CYAN /;"	d
+DARKGRAY	conio.h/conio.h	/^#define DARKGRAY /;"	d
+DataTuple	VariadicTable.h	/^  typedef std::tuple<Ts...> DataTuple;$/;"	t	class:VariadicTable	typeref:typename:std::tuple<Ts...>
+FIXED	VariadicTable.h	/^enum class VariadicTableColumnFormat { AUTO, SCIENTIFIC, FIXED, PERCENT };$/;"	e	enum:VariadicTableColumnFormat
+FakeClock	main.cpp	/^struct FakeClock {$/;"	s	file:
+GREEN	conio.h/conio.h	/^#define GREEN /;"	d
+Handler	main.cpp	/^struct Handler {$/;"	s	file:
+Hi! Welcome	conio.h/docs/index.md	/^# Hi! Welcome$/;"	c
+Hi! Welcome :wave::grin:	conio.h/README.md	/^# Hi! Welcome :wave::grin:$/;"	c
+Installation for Linux	conio.h/README.md	/^# Installation for Linux$/;"	c
+Installation for Linux	conio.h/docs/index.md	/^# Installation for Linux$/;"	c
+LIGHTBLUE	conio.h/conio.h	/^#define LIGHTBLUE /;"	d
+LIGHTCYAN	conio.h/conio.h	/^#define LIGHTCYAN /;"	d
+LIGHTGRAY	conio.h/conio.h	/^#define LIGHTGRAY /;"	d
+LIGHTGREEN	conio.h/conio.h	/^#define LIGHTGREEN /;"	d
+LIGHTMAGENTA	conio.h/conio.h	/^#define LIGHTMAGENTA /;"	d
+LIGHTRED	conio.h/conio.h	/^#define LIGHTRED /;"	d
+Library <conio.h> for LINUX	conio.h/README.md	/^# Library <conio.h> for LINUX$/;"	c
+List Function	conio.h/README.md	/^## List Function$/;"	s
+List Function	conio.h/docs/index.md	/^## List Function$/;"	s
+MAGENTA	conio.h/conio.h	/^#define MAGENTA /;"	d
+Operation	main.cpp	/^struct Operation {$/;"	s	file:
+PERCENT	VariadicTable.h	/^enum class VariadicTableColumnFormat { AUTO, SCIENTIFIC, FIXED, PERCENT };$/;"	e	enum:VariadicTableColumnFormat
+Process	main.cpp	/^struct Process {$/;"	s	file:
+Processes	main.cpp	/^using Processes = deque<Process>;$/;"	t	typeref:typename:deque<Process>	file:
+RED	conio.h/conio.h	/^#define RED /;"	d
+Random	main.cpp	/^  Random() : rng(chrono::steady_clock::now().time_since_epoch().count()) {}$/;"	f	struct:Random	file:
+Random	main.cpp	/^struct Random {$/;"	s	file:
+SCIENTIFIC	VariadicTable.h	/^enum class VariadicTableColumnFormat { AUTO, SCIENTIFIC, FIXED, PERCENT };$/;"	e	enum:VariadicTableColumnFormat
+Step 1 :	conio.h/README.md	/^### Step 1 :$/;"	S
+Step 1 :	conio.h/docs/index.md	/^### Step 1 :$/;"	S
+Step 2 :	conio.h/README.md	/^### Step 2 :$/;"	S
+Step 2 :	conio.h/docs/index.md	/^### Step 2 :$/;"	S
+VariadicTable	VariadicTable.h	/^  VariadicTable(std::vector<std::string> headers, unsigned int static_column_size = 0, unsigned /;"	f	class:VariadicTable
+VariadicTable	VariadicTable.h	/^class VariadicTable {$/;"	c
+VariadicTableColumnFormat	VariadicTable.h	/^enum class VariadicTableColumnFormat { AUTO, SCIENTIFIC, FIXED, PERCENT };$/;"	g
+WHITE	conio.h/conio.h	/^#define WHITE /;"	d
+Wanna Support me ?	conio.h/docs/index.md	/^# Wanna Support me ?$/;"	c
+Wanna Support me ? You can buy me some coffee via [PayPal :coffee:](https://www.paypal.com/paypalme/haialipp).	conio.h/README.md	/^## Wanna Support me ? You can buy me some coffee via [PayPal :coffee:](https:\/\/www.paypal.com\//;"	s
+YELLOW	conio.h/conio.h	/^#define YELLOW /;"	d
+__CONIO4LINUX_H	conio.h/conio.h	/^#define __CONIO4LINUX_H$/;"	d
+__CONIO_H	conio.h/conio.h	/^    __CONIO_H(){$/;"	f	class:__CONIO_H
+__CONIO_H	conio.h/conio.h	/^class __CONIO_H{$/;"	c
+___CONIO_H	conio.h/conio.h	/^  }___CONIO_H;$/;"	v	typeref:class:__CONIO_H
+_cell_padding	VariadicTable.h	/^  unsigned int _cell_padding;$/;"	m	class:VariadicTable	typeref:typename:unsigned int
+_column_format	VariadicTable.h	/^  std::vector<VariadicTableColumnFormat> _column_format;$/;"	m	class:VariadicTable	typeref:typename:std::vector<VariadicTableColumnFormat>
+_column_sizes	VariadicTable.h	/^  std::vector<unsigned int> _column_sizes;$/;"	m	class:VariadicTable	typeref:typename:std::vector<unsigned int>
+_cprintf	conio.h/conio.h	/^#define _cprintf /;"	d
+_cputs	conio.h/conio.h	/^#define _cputs /;"	d
+_cscanf	conio.h/conio.h	/^#define _cscanf /;"	d
+_data	VariadicTable.h	/^  std::vector<DataTuple> _data;$/;"	m	class:VariadicTable	typeref:typename:std::vector<DataTuple>
+_getche	conio.h/conio.h	/^#define _getche /;"	d
+_headers	VariadicTable.h	/^  std::vector<std::string> _headers;$/;"	m	class:VariadicTable	typeref:typename:std::vector<std::string>
+_kbhit	conio.h/conio.h	/^#define _kbhit /;"	d
+_num_columns	VariadicTable.h	/^  unsigned int _num_columns;$/;"	m	class:VariadicTable	typeref:typename:unsigned int
+_precision	VariadicTable.h	/^  std::vector<int> _precision;$/;"	m	class:VariadicTable	typeref:typename:std::vector<int>
+_putch	conio.h/conio.h	/^#define _putch /;"	d
+_static_column_size	VariadicTable.h	/^  unsigned int _static_column_size;$/;"	m	class:VariadicTable	typeref:typename:unsigned int
+_ungetch	conio.h/conio.h	/^#define _ungetch /;"	d
+a	main.cpp	/^  long long a, b;$/;"	m	struct:Operation	typeref:typename:long long	file:
+add	main.cpp	/^  void add(Process process) {$/;"	f	struct:Handler	typeref:typename:void	file:
+addRow	VariadicTable.h	/^  void addRow(Ts... entries) {$/;"	f	class:VariadicTable	typeref:typename:void
+all	main.cpp	/^  Processes all, ready, blocked, finished;$/;"	m	struct:Handler	typeref:typename:Processes	file:
+arrivalTime	main.cpp	/^  optional<int> arrivalTime;$/;"	m	struct:Process	typeref:typename:optional<int>	file:
+b	main.cpp	/^  long long a, b;$/;"	m	struct:Operation	typeref:typename:long long	file:
+bgc	conio.h/conio.h	/^    int bgc;$/;"	m	class:__CONIO_H	typeref:typename:int
+blocked	main.cpp	/^  Processes all, ready, blocked, finished;$/;"	m	struct:Handler	typeref:typename:Processes	file:
+blockedClock	main.cpp	/^  FakeClock blockedClock;$/;"	m	struct:Process	typeref:typename:FakeClock	file:
+blockedProcess	main.cpp	/^const string blockedProcess = "Bloqueado";$/;"	v	typeref:typename:const string
+cgets	conio.h/conio.h	/^#define cgets /;"	d
+clear	main.cpp	/^  void clear() {$/;"	f	struct:Process	typeref:typename:void	file:
+clock	main.cpp	/^  FakeClock clock;$/;"	m	struct:Process	typeref:typename:FakeClock	file:
+clreol	conio.h/conio.h	/^    void clreol(){$/;"	f	class:__CONIO_H	typeref:typename:void
+clreol	conio.h/conio.h	/^#define clreol /;"	d
+clrscr	conio.h/conio.h	/^    void clrscr(){$/;"	f	class:__CONIO_H	typeref:typename:void
+clrscr	conio.h/conio.h	/^#define clrscr /;"	d
+completedProcess	main.cpp	/^const string completedProcess = "Terminado normalmente";$/;"	v	typeref:typename:const string
+cprintf	conio.h/conio.h	/^#define cprintf /;"	d
+cputs	conio.h/conio.h	/^    int cputs(const char*str){$/;"	f	class:__CONIO_H	typeref:typename:int
+cputs	conio.h/conio.h	/^#define cputs /;"	d
+cscanf	conio.h/conio.h	/^#define cscanf /;"	d
+currentTime	main.cpp	/^  int currentTime() {$/;"	f	struct:FakeClock	typeref:typename:int	file:
+delline	conio.h/conio.h	/^    void delline(){$/;"	f	class:__CONIO_H	typeref:typename:void
+delline	conio.h/conio.h	/^#define delline /;"	d
+error	main.cpp	/^  bool error = false;$/;"	m	struct:Process	typeref:typename:bool	file:
+finished	main.cpp	/^  Processes all, ready, blocked, finished;$/;"	m	struct:Handler	typeref:typename:Processes	file:
+finishedTime	main.cpp	/^  int finishedTime;$/;"	m	struct:Process	typeref:typename:int	file:
+firstTimeInExecution	main.cpp	/^  optional<int> firstTimeInExecution;$/;"	m	struct:Process	typeref:typename:optional<int>	file:
+get	main.cpp	/^  T get(T l, T r) {$/;"	f	struct:Random	typeref:typename:T	file:
+get	main.cpp	/^  char get(string s) {$/;"	f	struct:Random	typeref:typename:char	file:
+getArrivalTime	main.cpp	/^  string getArrivalTime() {$/;"	f	struct:Process	typeref:typename:string	file:
+getFinishedTime	main.cpp	/^  string getFinishedTime() {$/;"	f	struct:Process	typeref:typename:string	file:
+getRemainingTime	main.cpp	/^  string getRemainingTime() {$/;"	f	struct:Process	typeref:typename:string	file:
+getResponseTime	main.cpp	/^  string getResponseTime() {$/;"	f	struct:Process	typeref:typename:string	file:
+getResult	main.cpp	/^  string getResult() {$/;"	f	struct:Process	typeref:typename:string	file:
+getReturnTime	main.cpp	/^  string getReturnTime() {$/;"	f	struct:Process	typeref:typename:string	file:
+getServiceTime	main.cpp	/^  string getServiceTime() {$/;"	f	struct:Process	typeref:typename:string	file:
+getStatus	main.cpp	/^  string getStatus() {$/;"	f	struct:Process	typeref:typename:string	file:
+getWaitTime	main.cpp	/^  string getWaitTime() {$/;"	f	struct:Process	typeref:typename:string	file:
+getch	conio.h/conio.h	/^    int getch(){$/;"	f	class:__CONIO_H	typeref:typename:int
+getch	conio.h/conio.h	/^#define getch /;"	d
+getch	main.cpp	/^char getch() {$/;"	f	typeref:typename:char
+getch_echo	conio.h/conio.h	/^    int getch_echo(bool echo=true){$/;"	f	class:__CONIO_H	typeref:typename:int
+getche	conio.h/conio.h	/^    int getche(){$/;"	f	class:__CONIO_H	typeref:typename:int
+getche	conio.h/conio.h	/^#define getche /;"	d
+getpass	conio.h/conio.h	/^    char*getpass(const char*prompt){$/;"	f	class:__CONIO_H	typeref:typename:char *
+gettext	conio.h/conio.h	/^    int gettext(int l,int t,int r,int b,void*destination){$/;"	f	class:__CONIO_H	typeref:typename:int
+gettext	conio.h/conio.h	/^#define gettext /;"	d
+globalClock	main.cpp	/^  FakeClock globalClock;$/;"	m	struct:Handler	typeref:typename:FakeClock	file:
+gotoxy	conio.h/conio.h	/^    void gotoxy(int x,int y){$/;"	f	class:__CONIO_H	typeref:typename:void
+gotoxy	conio.h/conio.h	/^#define gotoxy /;"	d
+hasBeenUnblocked	main.cpp	/^  bool hasBeenUnblocked() {$/;"	f	struct:Process	typeref:typename:bool	file:
+hasError	main.cpp	/^  bool hasError() {$/;"	f	struct:Process	typeref:typename:bool	file:
+hasFinished	main.cpp	/^  bool hasFinished() {$/;"	f	struct:Process	typeref:typename:bool	file:
+hasValue	main.cpp	/^  bool hasValue() {$/;"	f	struct:Process	typeref:typename:bool	file:
+id	main.cpp	/^  int id = -1;$/;"	m	struct:Process	typeref:typename:int	file:
+inExecution	main.cpp	/^  Process inExecution;$/;"	m	struct:Handler	typeref:typename:Process	file:
+inQueue	main.cpp	/^const string inQueue = "En cola";$/;"	v	typeref:typename:const string
+insline	conio.h/conio.h	/^    void insline(){$/;"	f	class:__CONIO_H	typeref:typename:void
+insline	conio.h/conio.h	/^#define insline /;"	d
+interruptProcess	main.cpp	/^  void interruptProcess() {$/;"	f	struct:Handler	typeref:typename:void	file:
+justify	VariadicTable.h	/^  static left_type justify(long \/*secondchoice*\/) {$/;"	f	class:VariadicTable	typeref:typename:left_type
+justify	VariadicTable.h	/^  static right_type justify(int \/*firstchoice*\/) {$/;"	f	class:VariadicTable	typeref:typename:right_type
+kMaxBlockedTime	main.cpp	/^const int kMaxBlockedTime = 8;$/;"	v	typeref:typename:const int
+kMaxProcessesInMemory	main.cpp	/^const int kMaxProcessesInMemory = 5;$/;"	v	typeref:typename:const int
+kbhit	conio.h/conio.h	/^    int kbhit(){$/;"	f	class:__CONIO_H	typeref:typename:int
+kbhit	conio.h/conio.h	/^#define kbhit /;"	d
+kbhit	main.cpp	/^bool kbhit() {$/;"	f	typeref:typename:bool
+left_type	VariadicTable.h	/^  typedef decltype(&std::left) left_type;$/;"	t	class:VariadicTable
+loadProcessesInMemory	main.cpp	/^  void loadProcessesInMemory() {$/;"	f	struct:Handler	typeref:typename:void	file:
+main	main.cpp	/^int main() {$/;"	f	typeref:typename:int
+maxExpectedTime	main.cpp	/^  int maxExpectedTime = 0;$/;"	m	struct:Process	typeref:typename:int	file:
+newProcess	main.cpp	/^const string newProcess = "Nuevo";$/;"	v	typeref:typename:const string
+numOfProcessesInMemory	main.cpp	/^  int numOfProcessesInMemory() {$/;"	f	struct:Handler	typeref:typename:int	file:
+op	main.cpp	/^  char op;$/;"	m	struct:Operation	typeref:typename:char	file:
+operation	main.cpp	/^  Operation operation;$/;"	m	struct:Process	typeref:typename:Operation	file:
+pause	main.cpp	/^  bool pause = false;$/;"	m	struct:Handler	typeref:typename:bool	file:
+print	VariadicTable.h	/^  void print() {$/;"	f	class:VariadicTable	typeref:typename:void
+print	VariadicTable.h	/^  void print(StreamType& stream) {$/;"	f	class:VariadicTable	typeref:typename:void
+print	main.cpp	/^  void print() {$/;"	f	struct:Handler	typeref:typename:void	file:
+print	main.cpp	/^void print(Args&&... args) {$/;"	f	typeref:typename:void
+print_each	VariadicTable.h	/^  void print_each(TupleType&& t, StreamType& stream) {$/;"	f	class:VariadicTable	typeref:typename:void
+print_each	VariadicTable.h	/^  void print_each(TupleType&& t, StreamType& stream, std::integral_constant<size_t, I>) {$/;"	f	class:VariadicTable	typeref:typename:void
+print_each	VariadicTable.h	/^  void print_each(TupleType&&,$/;"	f	class:VariadicTable	typeref:typename:void
+println	main.cpp	/^void println(Args&&... args) {$/;"	f	typeref:typename:void
+processWithError	main.cpp	/^const string processWithError = "Terminado con error";$/;"	v	typeref:typename:const string
+putch	conio.h/conio.h	/^    int putch(const char c){$/;"	f	class:__CONIO_H	typeref:typename:int
+putch	conio.h/conio.h	/^#define putch /;"	d
+putchar	conio.h/conio.h	/^#define putchar /;"	d
+quantum	main.cpp	/^  int quantum = 0;$/;"	m	struct:Handler	typeref:typename:int	file:
+randomProcess	main.cpp	/^Process randomProcess() {$/;"	f	typeref:typename:Process
+ready	main.cpp	/^  Processes all, ready, blocked, finished;$/;"	m	struct:Handler	typeref:typename:Processes	file:
+remainingTime	main.cpp	/^  int remainingTime() {$/;"	f	struct:Process	typeref:typename:int	file:
+reset	main.cpp	/^  void reset() {$/;"	f	struct:FakeClock	typeref:typename:void	file:
+responseTime	main.cpp	/^  optional<int> responseTime;$/;"	m	struct:Process	typeref:typename:optional<int>	file:
+result	main.cpp	/^  double result() const {$/;"	f	struct:Operation	typeref:typename:double	file:
+result	main.cpp	/^  string result() {$/;"	f	struct:Process	typeref:typename:string	file:
+returnTime	main.cpp	/^  int returnTime;$/;"	m	struct:Process	typeref:typename:int	file:
+right_type	VariadicTable.h	/^  typedef decltype(&std::right) right_type;$/;"	t	class:VariadicTable
+rng	main.cpp	/^  mt19937 rng;$/;"	m	struct:Random	typeref:typename:mt19937	file:
+secondsAgo	main.cpp	/^  int secondsAgo = 0;$/;"	m	struct:FakeClock	typeref:typename:int	file:
+serviceTime	main.cpp	/^  int serviceTime;$/;"	m	struct:Process	typeref:typename:int	file:
+setColumnFormat	VariadicTable.h	/^  void setColumnFormat(const std::vector<VariadicTableColumnFormat>& column_format) {$/;"	f	class:VariadicTable	typeref:typename:void
+setColumnPrecision	VariadicTable.h	/^  void setColumnPrecision(const std::vector<int>& precision) {$/;"	f	class:VariadicTable	typeref:typename:void
+setError	main.cpp	/^  void setError() {$/;"	f	struct:Process	typeref:typename:void	file:
+setQuantum	main.cpp	/^  void setQuantum(int quantum) {$/;"	f	struct:Handler	typeref:typename:void	file:
+showProcessesTable	main.cpp	/^  bool showProcessesTable = false;$/;"	m	struct:Handler	typeref:typename:bool	file:
+sizeOfData	VariadicTable.h	/^  size_t sizeOfData(...) {$/;"	f	class:VariadicTable	typeref:typename:size_t
+sizeOfData	VariadicTable.h	/^  size_t sizeOfData(const T& data, typename std::enable_if<std::is_integral<T>::value>::type* \//;"	f	class:VariadicTable	typeref:typename:size_t
+size_columns	VariadicTable.h	/^  void size_columns() {$/;"	f	class:VariadicTable	typeref:typename:void
+size_each	VariadicTable.h	/^  void size_each(TupleType&& t, std::vector<unsigned int>& sizes) {$/;"	f	class:VariadicTable	typeref:typename:void
+size_each	VariadicTable.h	/^  void size_each(TupleType&& t, std::vector<unsigned int>& sizes, std::integral_constant<size_t,/;"	f	class:VariadicTable	typeref:typename:void
+size_each	VariadicTable.h	/^  void size_each(TupleType&&,$/;"	f	class:VariadicTable	typeref:typename:void
+solve	main.cpp	/^  void solve() {$/;"	f	struct:Handler	typeref:typename:void	file:
+status	main.cpp	/^  string status = newProcess;$/;"	m	struct:Process	typeref:typename:string	file:
+textbackground	conio.h/conio.h	/^    void textbackground(int color){$/;"	f	class:__CONIO_H	typeref:typename:void
+textbackground	conio.h/conio.h	/^#define textbackground /;"	d
+textcolor	conio.h/conio.h	/^    void textcolor(short color){  $/;"	f	class:__CONIO_H	typeref:typename:void
+textcolor	conio.h/conio.h	/^#define textcolor /;"	d
+toString	main.cpp	/^  string toString() const {$/;"	f	struct:Operation	typeref:typename:string	file:
+ungetch	conio.h/conio.h	/^    int ungetch(int ch){$/;"	f	class:__CONIO_H	typeref:typename:int
+ungetch	conio.h/conio.h	/^#define ungetch /;"	d
+updateTime	main.cpp	/^  void updateTime() {$/;"	f	struct:Handler	typeref:typename:void	file:
+valid	main.cpp	/^  bool valid() {$/;"	f	struct:Operation	typeref:typename:bool	file:
+waitOnScreen	main.cpp	/^void waitOnScreen(chrono::duration<long double> duration, bool clearScreen = false) {$/;"	f	typeref:typename:void
+waitTime	main.cpp	/^  int waitTime;$/;"	m	struct:Process	typeref:typename:int	file:
+wherex	conio.h/conio.h	/^    int wherex(){$/;"	f	class:__CONIO_H	typeref:typename:int
+wherex	conio.h/conio.h	/^#define wherex /;"	d
+wherexy	conio.h/conio.h	/^    int wherexy(int&x,int&y){$/;"	f	class:__CONIO_H	typeref:typename:int
+wherey	conio.h/conio.h	/^    int wherey(){$/;"	f	class:__CONIO_H	typeref:typename:int
+wherey	conio.h/conio.h	/^#define wherey /;"	d
+~__CONIO_H	conio.h/conio.h	/^    ~__CONIO_H(){$/;"	f	class:__CONIO_H
