@@ -397,7 +397,10 @@ struct Handler {
 
     while (all.size() || numOfProcessesInMemory()) {
       if (inExecution.quantum >= quantum) {
-        interruptProcess();
+        inExecution.blockedClock.reset();
+        inExecution.status = inQueue;
+        ready.push_back(inExecution);
+        inExecution.clear();
       }
 
       if (kbhit()) {
