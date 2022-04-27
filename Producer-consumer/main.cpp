@@ -25,6 +25,7 @@ const int CAPACITY = 20;
 struct Container {
   int producerPos = 0;
   int consumerPos = 0;
+  int consumerLaps = 0;
   vector<int> vis;
 
   Container() : vis(CAPACITY, 0) {}
@@ -63,7 +64,9 @@ struct Container {
 
     for (int i = 0; i < vis.size(); i++)
       cout << setw(3) << i + 1;
-    cout << '\n';
+    cout << "\n\n";
+
+    waitOnScreen(.5s);
   }
 
   void add(int x) {
@@ -77,17 +80,34 @@ struct Container {
     while (x--) {
       vis[consumerPos] = 0;
       ++consumerPos %= CAPACITY;
+      if (consumerPos == 0)
+        consumerLaps++;
     }
   }
 };
 
 enum { PRODUCER, CONSUMER };
 
+bool escPressed() {
+#ifdef LOCAL
+#else
+  if (kbhit()) {
+    char ch = getch();
+
+    if (ch == 27)
+      return true;
+  }
+#endif
+  return false;
+}
+
 int main() {
 
   Container container;
   Random random;
   int it = 40;
+
+  container.print();
 
   while (it--) {
     int who = random.get<int>(1, 10000) % 2;
@@ -109,14 +129,11 @@ int main() {
 
     container.print();
 
-    // if (kbhit()) {
-    //   int ch = getch();
+    if (container.consumerLaps >= 2)
+      break;
 
-    //   if (ch == 27)
-    //     break;
-    // }
-
-    waitOnScreen(3s);
+    // if (escPressed())
+    //   break;
   }
 
   return 0;
