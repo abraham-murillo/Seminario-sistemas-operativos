@@ -242,6 +242,7 @@ struct Handler {
   Process inExecution;
   bool pause = false;
   bool showProcessesTable = false;
+  bool showMemoryTable = false;
   int quantum = 0;
   int memoryUsed = 0;
 
@@ -284,7 +285,7 @@ struct Handler {
       memoryUsed += myCeil(all.front().memorySize, kFrameSize) * kFrameSize;
       // Ensartar proceso en memoria disponible
       for (int i = 0; i < kNumberOfFrames; i++) {
-        if (frames[i].memoryUsed == 0) {
+        if (frames[i].memoryUsed == 0 && ready.back().memorySize - ready.back().paginatedMemory > 0) {
           int memoryToAllocate = min(kFrameSize, ready.back().memorySize - ready.back().paginatedMemory);
           frames[i].memoryUsed += memoryToAllocate;
           frames[i].processId = ready.back().id;
@@ -359,7 +360,25 @@ struct Handler {
       }
       processesTable.print();
 
+    } else if (showMemoryTable) {
+      VariadicTable<int, string, string, int, string, string> memoryTable(
+          {"Marco", "Memoria consumida", "ID de proceso", "Marco", "Memoria consumida", "ID de proceso"});
+
+      for (int id = 0; id < kNumberOfFrames; id += 2)
+        memoryTable.addRow(id,
+                           to_string(frames[id].memoryUsed) + "/" + to_string(kFrameSize),
+                           (id < kFramesUsedByOS         ? "OS"
+                            : frames[id].memoryUsed == 0 ? "Libre"
+                                                         : to_string(frames[id].processId)),
+                           id + 1,
+                           to_string(frames[id + 1].memoryUsed) + "/" + to_string(kFrameSize),
+                           (id + 1 < kFramesUsedByOS         ? "OS"
+                            : frames[id + 1].memoryUsed == 0 ? "Libre"
+                                                             : to_string(frames[id + 1].processId)));
+
+      memoryTable.print();
     } else {
+
       println("Segundos transcurridos:", globalClock.currentTime());
       println("No. nuevos:", all.size());
       println("Quantum:", quantum);
@@ -463,11 +482,17 @@ struct Handler {
         } else if (ch == 'c') {
           pause = false;
           showProcessesTable = false;
+          showMemoryTable = false;
+        } else if (ch == 'a') {
+          pause = true;
+          showProcessesTable = false;
+          showMemoryTable = true;
         } else if (ch == 'n') {
           add(randomProcess());
         } else if (ch == 't') {
-          showProcessesTable = true;
           pause = true;
+          showProcessesTable = true;
+          showMemoryTable = false;
         }
       }
 
