@@ -32,12 +32,16 @@ char getch() {
   cout << "Presionado " << ch << '\n';
   return ch;
 }
+
 #else
 #include <conio.h>
 #endif
 
-const int kMaxProcessesInMemory = 5;
 const int kMaxBlockedTime = 8;
+const int kNumberOfFrames = 50;
+const int kFrameSize = 4;
+const int kFramesUsedByOS = 4;
+const int kAmountOfAvailableMemory = 200;
 
 template <class... Args>
 void print(Args&&... args) {
@@ -55,6 +59,17 @@ void waitOnScreen(chrono::duration<long double> duration, bool clearScreen = fal
   if (clearScreen)
     system("clear");
 }
+
+int myCeil(int x, int y) {
+  return (x + (y - 1)) / y;
+}
+
+struct Frame {
+  int memoryUsed = 0;
+  int processId = 0;
+};
+
+Frame frames[kNumberOfFrames];
 
 struct FakeClock {
   int secondsAgo = 0;
@@ -124,6 +139,8 @@ struct Process {
   int serviceTime;
   string status = newProcess;
   int quantum = 0;
+  int memorySize = 0;
+  int paginatedMemory = 0;
 
   void setError() {
     status = processWithError;
@@ -213,6 +230,7 @@ Process randomProcess() {
   process.operation.a = random.get<int>(1, 100);
   process.operation.b = random.get<int>(1, 100);
   process.operation.op = random.get("+-*/%");
+  process.memorySize = random.get<int>(5, 28);
   return process;
 }
 
@@ -225,6 +243,7 @@ struct Handler {
   bool pause = false;
   bool showProcessesTable = false;
   int quantum = 0;
+  int memoryUsed = 0;
 
   void setQuantum(int quantum) {
     this->quantum = quantum;
@@ -236,6 +255,10 @@ struct Handler {
 
   int numOfProcessesInMemory() {
     return ready.size() + blocked.size() + inExecution.hasValue();
+  }
+
+  bool canFitProcessIntoMemory(const Process& process) {
+    return kAmountOfAvailableMemory - memoryUsed >= process.memorySize;
   }
 
   void loadProcessesInMemory() {
@@ -255,9 +278,29 @@ struct Handler {
       }
     }
 
-    // Agarrar más procesos si tengo menos de kMaxProcessesInMemory en memory
-    while (numOfProcessesInMemory() < kMaxProcessesInMemory && all.size()) {
+    // Agarrar más procesos a listos siempre y cuando el siguiente proceso pueda caber en memoria
+    while (!all.empty() && canFitProcessIntoMemory(all.front())) {
       ready.push_back(all.front());
+      memoryUsed += myCeil(all.front().memorySize, kFrameSize) * kFrameSize;
+      // Ensartar proceso en memoria disponible
+      for (int i = 0; i < kNumberOfFrames; i++) {
+        if (frames[i].memoryUsed == 0) {
+          int memoryToAllocate = min(kFrameSize, ready.back().memorySize - ready.back().paginatedMemory);
+          frames[i].memoryUsed += memoryToAllocate;
+          frames[i].processId = ready.back().id;
+          ready.back().paginatedMemory += memoryToAllocate;
+        }
+      }
+
+      if (ready.back().paginatedMemory != ready.back().memorySize) {
+        cerr << ready.back().id << '\n';
+        cerr << ready.back().paginatedMemory << '\n';
+        cerr << ready.back().memorySize << '\n';
+        cerr << '\n';
+      }
+
+      assert(ready.back().paginatedMemory == ready.back().memorySize);
+
       if (!ready.back().arrivalTime.has_value())
         ready.back().arrivalTime = globalClock.currentTime();
       all.pop_front();
@@ -320,6 +363,8 @@ struct Handler {
       println("Segundos transcurridos:", globalClock.currentTime());
       println("No. nuevos:", all.size());
       println("Quantum:", quantum);
+      println("Memoria utilizada:", memoryUsed, "MB");
+      println("Memoria disponible:", kAmountOfAvailableMemory - memoryUsed, "MB");
       println();
 
       {
@@ -327,9 +372,9 @@ struct Handler {
         if (ready.empty()) {
           println(" - ");
         } else {
-          VariadicTable<int, int, string, int> readyTable({"Id", "Tiempo máximo estimado", "Operación", "Tiempo en ejecución"});
+          VariadicTable<int, int, string, int, int> readyTable({"Id", "Tiempo máximo estimado", "Operación", "Tiempo en ejecución", "Tamaño"});
           for (auto& process : ready) {
-            readyTable.addRow(process.id, process.maxExpectedTime, process.operation.toString(), process.clock.currentTime());
+            readyTable.addRow(process.id, process.maxExpectedTime, process.operation.toString(), process.clock.currentTime(), process.memorySize);
           }
           readyTable.print();
         }
@@ -395,7 +440,8 @@ struct Handler {
   void solve() {
     globalClock.reset();
 
-    while (all.size() || numOfProcessesInMemory()) {
+    // Seguir procesando hasta que se termine la memoria y los procesos
+    while (!all.empty() || memoryUsed > 0) {
       if (inExecution.quantum >= quantum) {
         inExecution.blockedClock.reset();
         inExecution.status = inQueue;
@@ -429,6 +475,15 @@ struct Handler {
         // Ya terminó o tuvo un error
         if (!inExecution.hasError() && inExecution.hasFinished()) {
           inExecution.status = completedProcess;
+        }
+
+        memoryUsed -= myCeil(inExecution.memorySize, kFrameSize) * kFrameSize;
+
+        for (int i = 0; i < kNumberOfFrames; i++) {
+          if (frames[i].processId == inExecution.id) {
+            frames[i].processId = 0;
+            frames[i].memoryUsed = 0;
+          }
         }
 
         inExecution.finishedTime = globalClock.currentTime();
@@ -483,8 +538,15 @@ int main() {
   cin >> numProcesses;
   cout << "Quantum (segundos): ";
   cin >> quantum;
-
   Handler handler;
+
+  // Asignar memoria al sistema operativo
+  for (int i = 0; i < kFramesUsedByOS; i++) {
+    frames[i].memoryUsed = kFrameSize;
+    frames[i].processId = -1;
+    handler.memoryUsed += kFrameSize;
+  }
+
   for (int id = 0; id < numProcesses; id++) {
     auto process = randomProcess();
     handler.add(process);
