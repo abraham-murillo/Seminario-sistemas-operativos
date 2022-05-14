@@ -22,14 +22,16 @@ struct Random {
 
 #ifdef LOCAL
 bool kbhit() {
-  static Random random;
   return true;
 }
 
+int now = 0;
+
 char getch() {
-  static Random random;
-  char ch = random.get("ientc");
-  cout << "Presionado " << ch << '\n';
+  const string wut = "iisisracracrac";
+  char ch = wut[now++];
+  now %= int(wut.size());
+  cout << "Presionado (" << now - 1 << ") " << ch << '\n';
   return ch;
 }
 
@@ -221,6 +223,20 @@ struct Process {
   }
 };
 
+map<int, Process> lazy;
+
+istream& operator>>(istream& is, Process& p) {
+  is >> p.id;
+  p = lazy[p.id];
+  lazy.erase(p.id);
+  return is;
+}
+
+ostream& operator<<(ostream& os, const Process& p) {
+  os << setw(5) << p.id;
+  return os;
+}
+
 Process randomProcess() {
   static int id = 0;
   static Random random;
@@ -239,10 +255,13 @@ using Processes = deque<Process>;
 struct Handler {
   Processes all, ready, blocked, finished;
   FakeClock globalClock;
-  Process inExecution;
+  Process inExecution, returnProcessFromDisk;
   bool pause = false;
   bool showProcessesTable = false;
   bool showMemoryTable = false;
+  bool suspendIfAny = false;
+  bool returnIfPossible = false;
+  int suspended = 0;
   int quantum = 0;
   int memoryUsed = 0;
 
@@ -260,6 +279,36 @@ struct Handler {
 
   bool canFitProcessIntoMemory(const Process& process) {
     return kAmountOfAvailableMemory - memoryUsed >= process.memorySize;
+  }
+
+  int memoryNeeded(const Process& process) {
+    return myCeil(process.memorySize, kFrameSize) * kFrameSize;
+  }
+
+  void clearMemory(Process& process) {
+    // Liberas la memoria del proceso en ejecución
+    memoryUsed -= memoryNeeded(process);
+    process.paginatedMemory = 0;
+    for (int i = 0; i < kNumberOfFrames; i++) {
+      if (frames[i].processId == process.id) {
+        frames[i].processId = 0;
+        frames[i].memoryUsed = 0;
+      }
+    }
+  }
+
+  void assignMemory(Process& process) {
+    // Ensartar proceso en memoria disponible
+    memoryUsed += memoryNeeded(process);
+    process.paginatedMemory = 0;
+    for (int i = 0; i < kNumberOfFrames; i++) {
+      if (frames[i].memoryUsed == 0 && process.memorySize - process.paginatedMemory > 0) {
+        int memoryToAllocate = min(kFrameSize, process.memorySize - process.paginatedMemory);
+        frames[i].memoryUsed += memoryToAllocate;
+        frames[i].processId = process.id;
+        process.paginatedMemory += memoryToAllocate;
+      }
+    }
   }
 
   void loadProcessesInMemory() {
@@ -282,16 +331,18 @@ struct Handler {
     // Agarrar más procesos a listos siempre y cuando el siguiente proceso pueda caber en memoria
     while (!all.empty() && canFitProcessIntoMemory(all.front())) {
       ready.push_back(all.front());
-      memoryUsed += myCeil(all.front().memorySize, kFrameSize) * kFrameSize;
-      // Ensartar proceso en memoria disponible
-      for (int i = 0; i < kNumberOfFrames; i++) {
-        if (frames[i].memoryUsed == 0 && ready.back().memorySize - ready.back().paginatedMemory > 0) {
-          int memoryToAllocate = min(kFrameSize, ready.back().memorySize - ready.back().paginatedMemory);
-          frames[i].memoryUsed += memoryToAllocate;
-          frames[i].processId = ready.back().id;
-          ready.back().paginatedMemory += memoryToAllocate;
-        }
-      }
+      // memoryUsed += myCeil(all.front().memorySize, kFrameSize) * kFrameSize;
+      // // Ensartar proceso en memoria disponible
+      // for (int i = 0; i < kNumberOfFrames; i++) {
+      //   if (frames[i].memoryUsed == 0 && ready.back().memorySize - ready.back().paginatedMemory > 0) {
+      //     int memoryToAllocate = min(kFrameSize, ready.back().memorySize - ready.back().paginatedMemory);
+      //     frames[i].memoryUsed += memoryToAllocate;
+      //     frames[i].processId = ready.back().id;
+      //     ready.back().paginatedMemory += memoryToAllocate;
+      //   }
+      // }
+
+      assignMemory(ready.back());
 
       if (ready.back().paginatedMemory != ready.back().memorySize) {
         cerr << ready.back().id << '\n';
@@ -306,6 +357,13 @@ struct Handler {
         ready.back().arrivalTime = globalClock.currentTime();
       all.pop_front();
     }
+  }
+
+  bool exists(int id) {
+    for (int i = 0; i < kNumberOfFrames; i++)
+      if (frames[i].processId == id)
+        return true;
+    return false;
   }
 
   void updateTime() {
@@ -378,13 +436,28 @@ struct Handler {
 
       memoryTable.print();
     } else {
-
       println("Segundos transcurridos:", globalClock.currentTime());
       println("No. nuevos:", all.size());
       println("Quantum:", quantum);
       println("Memoria utilizada:", memoryUsed, "MB");
       println("Memoria disponible:", kAmountOfAvailableMemory - memoryUsed, "MB");
       println();
+      println("Procesos suspendidos:", suspended);
+      println();
+
+      {
+        if (returnProcessFromDisk.id >= -1) {
+          if (returnProcessFromDisk.id == -1) {
+            println("Se intentó regresar un proceso de disco pero no había");
+          } else {
+            println("Proceso regresado de disco:");
+            println(" Id:", abs(returnProcessFromDisk.id));
+            println(" Memoria:", returnProcessFromDisk.memorySize);
+            println(" Status:", exists(returnProcessFromDisk.id) ? "agregado a listos" : "no cabe en memoria");
+          }
+        }
+        println();
+      }
 
       {
         println("Cola de listos:");
@@ -409,6 +482,7 @@ struct Handler {
           println(" Tiempo en ejecución:", inExecution.clock.currentTime());
           println(" Tiempo restante por ejecutar:", inExecution.remainingTime());
           println(" Quantum restante:", quantum - inExecution.quantum);
+          println(" Memoria:", inExecution.memorySize);
         } else {
           println(" - ");
         }
@@ -493,23 +567,32 @@ struct Handler {
           pause = true;
           showProcessesTable = true;
           showMemoryTable = false;
+        } else if (ch == 's') {
+          suspendIfAny = true;
+        } else if (ch == 'r') {
+          returnIfPossible = true;
+        } else if (ch == 'x') {
+          exit(0);
         }
       }
 
+      // Ya terminó o tuvo un error
       if (inExecution.hasValue() && (inExecution.hasError() || inExecution.hasFinished())) {
-        // Ya terminó o tuvo un error
         if (!inExecution.hasError() && inExecution.hasFinished()) {
           inExecution.status = completedProcess;
         }
 
-        memoryUsed -= myCeil(inExecution.memorySize, kFrameSize) * kFrameSize;
+        // // Liberas la memoria del proceso en ejecución
+        // memoryUsed -= myCeil(inExecution.memorySize, kFrameSize) * kFrameSize;
 
-        for (int i = 0; i < kNumberOfFrames; i++) {
-          if (frames[i].processId == inExecution.id) {
-            frames[i].processId = 0;
-            frames[i].memoryUsed = 0;
-          }
-        }
+        // for (int i = 0; i < kNumberOfFrames; i++) {
+        //   if (frames[i].processId == inExecution.id) {
+        //     frames[i].processId = 0;
+        //     frames[i].memoryUsed = 0;
+        //   }
+        // }
+
+        clearMemory(inExecution);
 
         inExecution.finishedTime = globalClock.currentTime();
         inExecution.returnTime = inExecution.finishedTime - inExecution.arrivalTime.value();
@@ -517,6 +600,62 @@ struct Handler {
         inExecution.waitTime = inExecution.firstTimeInExecution.value();
         finished.push_back(inExecution);
         inExecution.clear();
+      }
+
+      // Si algún proceso está en bloqueados pasa a ser suspendido
+      if (suspendIfAny) {
+        if (blocked.size() > 0) {
+          fstream disk("disk.txt", fstream::app);
+          Process current = blocked.front();
+          blocked.pop_front();
+
+          disk << current;
+          disk.close();
+
+          lazy[current.id] = current;
+          clearMemory(current);
+          suspended++;
+        }
+        suspendIfAny = false;
+      }
+
+      // Le ponemos esto para decir que no se intentó regresar a nadie
+      returnProcessFromDisk.id = -2;
+
+      // Si hay procesos suspendidos regresarlos a la memoria
+      if (returnIfPossible) {
+        if (suspended > 0) {
+          fstream disk("disk.txt", fstream::in | fstream::out);
+          Process current;
+          int lastPositionRead = 0;
+          do {
+            lastPositionRead = disk.tellg();
+            disk >> current;
+          } while (current.id == -1);
+
+          returnProcessFromDisk = current;
+          assert(current.id != -1);
+
+          // Si hay alguno disponible
+          if (canFitProcessIntoMemory(current)) {
+            // Hay que marcarlo como leído, para eso sólo cambiamos el id a -1
+            disk.seekp(lastPositionRead);
+            cout << "Escribe en " << lastPositionRead << " -1\n";
+            disk << setw(5) << -1;
+
+            // Lo regreso a la cola de listos y asigno memoria para el proceso
+            ready.push_back(current);
+            assignMemory(current);
+            suspended--;
+          }
+
+          disk.close();
+        } else {
+          // No hay procesos para regresar
+          returnProcessFromDisk.id = -1;
+        }
+
+        returnIfPossible = false;
       }
 
       // Cargar processos en memoria
@@ -537,7 +676,7 @@ struct Handler {
       }
 
       print();
-      waitOnScreen(1s, numOfProcessesInMemory() != 0 /* clearScreen */);
+      waitOnScreen(3s, numOfProcessesInMemory() != 0 /* clearScreen */);
       updateTime();
     }
 
@@ -557,6 +696,10 @@ struct Handler {
 };
 
 int main() {
+  // Limpiar el disco
+  ofstream disk("disk.txt");
+  disk.close();
+
   int numProcesses;
   int quantum;
   cout << "Número de procesos: ";
